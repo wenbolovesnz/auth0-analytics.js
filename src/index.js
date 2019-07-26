@@ -3,28 +3,28 @@
 // Safe require for babel-pollyfill
 // See issue: https://github.com/auth0/auth0-analytics.js/issues/14
 if (
-  (typeof window !== 'undefined' && !window['_babelPolyfill']) ||
-  (typeof global !== 'undefined' && !global['_babelPolyfill'])
+  (typeof window !== "undefined" && !window["_babelPolyfill"]) ||
+  (typeof global !== "undefined" && !global["_babelPolyfill"])
 ) {
-  require('babel-polyfill');
+  require("babel-polyfill");
 }
 
-import TagManager from 'auth0-tag-manager';
+import TagManager from "auth0-tag-manager";
 
 let analytics;
 
-const IGNORED_EVENTS = ['hash_parsed'];
+const IGNORED_EVENTS = ["hash_parsed"];
 
 function eventShouldBeIgnored(name) {
-  if (typeof name !== 'string')
-    throw new Error('Lock event name must be a string.');
+  if (typeof name !== "string")
+    throw new Error("Lock event name must be a string.");
 
   return IGNORED_EVENTS.indexOf(name) !== -1;
 }
 
 function eventIsAvailable(lock, name) {
-  if (typeof name !== 'string')
-    throw new Error('Lock event name must be a string.');
+  if (typeof name !== "string")
+    throw new Error("Lock event name must be a string.");
 
   return lock.validEvents.indexOf(name) !== -1;
 }
@@ -34,27 +34,41 @@ function setupEvent(lock, name, tracker = analytics) {
 
   lock.on(name, function(payload) {
     if (
-      name === 'authenticated' &&
+      name === "authenticated" &&
       payload &&
       payload.idTokenPayload &&
       payload.idTokenPayload.sub
     ) {
       tracker.setUserId(payload.idTokenPayload.sub);
     }
-    let eventName = `auth0 lock ${name}`;
-    tracker.track(eventName);
+
+    const isAusSite = window.location.href.indexOf(".com.au") > 0;
+    if (name === "signin") {
+      name = "login";
+    }
+    let eventName = `auth0 ${isAusSite ? "AUS" : "NZ"} ${name}`;
+    eventName = eventName.replace("signin", "login");
+    eventName = eventName.replace("signup", "activate");
+    eventName = eventName.replace(
+      "forgot_password ready",
+      "forgot_password clicked"
+    );
+
+    console.log(eventName);
+    tracker.track(eventName, { category: "Auth0" });
   });
 }
 
 function init(lock) {
   if (!window.auth0AnalyticsOptions) {
     throw new Error(
-      'You must provide initialization options for Auth0 Analytics.'
+      "You must provide initialization options for Auth0 Analytics."
     );
   }
 
   if (!window.auth0AnalyticsOptions.label) {
-    window.auth0AnalyticsOptions.label = 'Auth0 Analytics';
+    const isAusSite = window.location.href.indexOf(".com.au") > 0;
+    window.auth0AnalyticsOptions.label = isAusSite ? "Auth0 AUS" : "Auth0 NZ";
   }
 
   analytics = TagManager(window.auth0AnalyticsOptions);
@@ -65,7 +79,7 @@ function init(lock) {
   });
 }
 
-if (typeof Auth0Lock === 'function') {
+if (typeof Auth0Lock === "function") {
   let prototype = Auth0Lock.prototype;
   Auth0Lock = function() {
     let lock = prototype.constructor.apply(this, arguments);
