@@ -56,6 +56,16 @@ function setupEvent(lock, name, tracker = analytics) {
 
     console.log(eventName);
     tracker.track(eventName, { category: "Auth0" });
+
+    if (name === "signup ready") {
+      window.$("#contactLink").on("click", function() {
+        let clickEventName = `auth0 ${
+          isAusSite ? "AUS" : "NZ"
+        } contact us clicked`;
+        console.log(clickEventName);
+        tracker.track(clickEventName, { category: "Auth0" });
+      });
+    }
   });
 }
 
@@ -72,6 +82,7 @@ function init(lock) {
   }
 
   analytics = TagManager(window.auth0AnalyticsOptions);
+  window.laminexTracker = analytics;
 
   lock.validEvents.forEach(name => {
     if (eventShouldBeIgnored(name)) return; // Not needed for analytics
